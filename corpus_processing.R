@@ -39,3 +39,20 @@ dtm = DocumentTermMatrix(doc_target)
 dtm
 
 inspect(dtm[1:5,1:20])
+
+write.csv(as.matrix(dtm),file='dtm.csv')
+
+mfreq = colSums(as.matrix(dtm))
+
+p1 = ggplot(data.frame(word=names(mfreq),freq=mfreq),aes(word,freq))+ 
+  geom_bar(stat='identity') + 
+  theme(axis.text.x=element_text(angle=45,hjust=0.5))
+p1
+
+p1 = ggplot(subset(data.frame(word=names(mfreq),freq=mfreq),freq>800),aes(word,freq))+ 
+  geom_bar(stat='identity') + 
+  theme(axis.text.x=element_text(size=12,color='red',fac='bold.italic',angle=45,hjust=0.5))
+p1
+
+mord = order(mfreq, decreasing=TRUE) #increasing order as default
+mfreq[head(mord,20)]
