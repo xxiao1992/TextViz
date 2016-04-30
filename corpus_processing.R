@@ -42,6 +42,14 @@ inspect(dtm[1:5,1:20])
 
 write.csv(as.matrix(dtm),file='dtm.csv')
 
+### if read from a local file
+
+# library(qdap)
+# x = read.csv('dtm.csv', header = T)
+# row.names(x) = x[,1]
+# x = x[,-1]
+# dtm = as.dtm(as.wfm(x))
+
 mfreq = colSums(as.matrix(dtm))
 
 p1 = ggplot(data.frame(word=names(mfreq),freq=mfreq),aes(word,freq))+ 
@@ -56,3 +64,27 @@ p1
 
 mord = order(mfreq, decreasing=TRUE) #increasing order as default
 mfreq[head(mord,20)]
+
+wc_words = mfreq[order(mfreq, decreasing=TRUE)][1:1000]
+
+
+set.seed(-1)
+wordcloud(names(wc_words),wc_words,
+          random.color=FALSE, 
+          # colors chosen randomly or based on the frequency
+          random.order=FALSE) # plot in an dreasing frequency
+
+inspect(removeSparseTerms(dtm, 0.6))
+
+dtmc = removeSparseTerms(dtm,sparse=0.6) 
+
+
+mfreq = colSums(as.matrix(dtmc))
+set.seed(429)
+wordcloud(names(mfreq),mfreq,
+          min.freq=5, # plot words apprear 10+ times
+          scale=c(4,0.5), # make it bigger with argument "scale"
+          colors=brewer.pal(8, "Dark2"), # use color palettes
+          random.color=FALSE, 
+          # colors chosen randomly or based on the frequency
+          random.order=FALSE) # plot in an dreasing frequency
