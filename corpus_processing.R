@@ -11,29 +11,64 @@ require('tm')
 require('Rgraphviz')
 require('fpc')
 
-setwd("C:/Users/oweni/OneDrive/Documents/GitHub/textViz")
+setwd("/home/rohitb/Dropbox/Spring16/ExploratoryDataAnalysis/Assignments/Project4")
 
-mypwd = "C:/Users/oweni/OneDrive/Documents/GitHub/textViz/data"
-docs = Corpus(DirSource(mypwd))
 
-class(docs)
-class(docs[[1]])
-inspect(docs[1])
+#reading the file and creating a temporary corpus
+text <- readLines("State of the Union Addresses 1970-2016.txt")
+docs <- Corpus(VectorSource(paste(text,collapse="\n")))
 
-# split the documents into individual lists
-docs = Corpus(VectorSource(strsplit(paste(docs[[1]]$content,collapse='\n'),"***",fixed=TRUE)[[1]]))
 
+# Creating the corpus of the documents
+docs <- Corpus(VectorSource(
+  strsplit(as.character(docs[[1]]),  ## coerce to character
+           "***",   
+           fixed=TRUE)[[1]]))  
+
+
+#Adding author and date as meta information for each document
+docs_backs <- docs
+
+meta_data <- strsplit(docs[[1]]$content,"\n ",fixed = TRUE)[[1]]
+meta_data <- list[grepl("[Union].*",meta_data,perl=TRUE)]
+meta_data <- sub("\n","",meta_data,perl = TRUE)
+meta_data <- trimws(meta_data)
+meta_data <- sub(", State of the Union Address, ","--",meta_data,perl=TRUE)
+meta_data <- strsplit(meta_data,"--",fixed=TRUE)
+docs[[1]] <- NULL
+meta_data[[1]] <- NULL
+
+for(j in seq(docs))   
+{   
+  meta(docs[[j]],"author") <- meta_data[[j]][1]
+  meta(docs[[j]],"Date") <-  meta_data[[j]][2]
+  meta(docs[[j]],"description") <- "State of the Union Address"
+}
+docs[[1]]$meta
+
+# Processing documents - Cleaning
+docs = tm_map(docs, function(x){
+  x$content <- trimws(x$content)
+  x
+})
 docs = tm_map(docs, content_transformer(tolower))
 docs = tm_map(docs, removeNumbers)
 docs = tm_map(docs, removePunctuation)
 docs = tm_map(docs, removeWords, stopwords("english"))
 docs = tm_map(docs, stemDocument)
 docs = tm_map(docs, stripWhitespace)
-docs = tm_map(docs, PlainTextDocument)
+#docs = tm_map(docs, PlainTextDocument)
 
-doc_target = docs[180:225]
 
-names(doc_target) = paste("year", 1970:2016, sep = " ") 
+docs[[1]]$meta
+
+# Building term matrix 
+
+doc_target = docs[180:224]
+
+doc_target[[1]]$content
+
+#names(doc_target) = paste("year", 1970:2016, sep = " ") 
 
 dtm = DocumentTermMatrix(doc_target)
 dtm
@@ -56,3 +91,6 @@ p1
 
 mord = order(mfreq, decreasing=TRUE) #increasing order as default
 mfreq[head(mord,20)]
+
+#wordcloud
+wordcloud(names(mfreq),mfreq, min.freq=70)

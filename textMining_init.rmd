@@ -1,0 +1,156 @@
+---
+title: "Project4_TextMining"
+author: "rbg"
+date: "May 9, 2016"
+output: html_document
+---
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+require('wordcloud')
+require('biclust')
+require('cluster')
+require('igraph') 
+require('dplyr')
+require('scales')
+require('SnowballC')
+require('RColorBrewer')
+require('ggplot2')
+require('tm')
+# source("https://bioconductor.org/biocLite.R")
+# biocLite("Rgraphviz")
+require('Rgraphviz')
+require('fpc')
+
+```
+
+Loading the union address file into the database and then converting it into text mining corpus. 
+
+```{r, echo=FALSE}
+setwd("/home/rohitb/Dropbox/Spring16/ExploratoryDataAnalysis/Assignments/Project4")
+text <- readLines("State of the Union Addresses 1970-2016.txt")
+docs <- Corpus(VectorSource(paste(text,collapse="\n")))
+#inspect(docs)
+
+```
+
+```{r, echo=FALSE}
+docs <- Corpus(VectorSource(
+  strsplit(as.character(docs[[1]]),  ## coerce to character
+           "***",   
+           fixed=TRUE)[[1]]))  
+docs_backs <- docs
+#inspect(split.docs)
+#docs[[2]]$content
+```
+
+Adding author and data to meta-data of each document. 
+
+```{r echo=FALSE}
+
+docs <- docs_backs
+meta_data <- strsplit(docs[[1]]$content,"\n ",fixed = TRUE)[[1]]
+meta_data <- meta_data[grepl("[Union].*",meta_data,perl=TRUE)]
+meta_data <- sub("\n","",meta_data,perl = TRUE)
+meta_data <- trimws(meta_data)
+meta_data <- sub(", State of the Union Address, ","--",meta_data,perl=TRUE)
+meta_data <- strsplit(meta_data,"--",fixed=TRUE)
+docs[[1]] <- NULL
+
+for(j in seq(docs))   
+{   
+     docs[[j]]$content <- gsub("\n\n", "\n", docs[[j]]$content)
+     docs[[j]]$content <- gsub("\\([^\\)]*\\)", "", docs[[j]]$content, perl=TRUE)
+     meta(docs[[j]],"author") <- meta_data[[j]][1]
+     meta(docs[[j]],"Date") <-  meta_data[[j]][2]
+     meta(docs[[j]],"description") <- "State of the Union Address"
+}
+#inspect(split.docs)
+docs[[2]]$meta
+```
+
+Cleaning
+
+```{r echo=FALSE, warning=FALSE}
+docs = tm_map(docs, function(x){
+  x$content <- trimws(x$content)
+  x
+})
+docs = tm_map(docs, content_transformer(tolower))
+docs = tm_map(docs, removeNumbers)
+docs = tm_map(docs, removePunctuation)
+docs = tm_map(docs, removeWords, stopwords("english"))
+docs = tm_map(docs, stemDocument)
+docs = tm_map(docs, stripWhitespace)
+```
+
+Analysis (term matrix):
+
+```{r echo=FALSE, eval=FALSE}
+# Building term matrix 
+doc_target = docs[180:224]
+doc_target[[1]]$content
+#names(doc_target) = paste("year", 1970:2016, sep = " ") 
+
+dtm = DocumentTermMatrix(doc_target)
+dtm
+
+inspect(dtm[1:5,1:20])
+
+write.csv(as.matrix(dtm),file='dtm.csv')
+
+mfreq = colSums(as.matrix(dtm))
+
+p1 = ggplot(data.frame(word=names(mfreq),freq=mfreq),aes(word,freq))+ 
+  geom_bar(stat='identity') + 
+  theme(axis.text.x=element_text(angle=45,hjust=0.5))
+p1
+
+p1 = ggplot(subset(data.frame(word=names(mfreq),freq=mfreq),freq>800),aes(word,freq))+ 
+  geom_bar(stat='identity') + 
+  theme(axis.text.x=element_text(size=12,color='red',fac='bold.italic',angle=45,hjust=0.5))
+p1
+
+mord = order(mfreq, decreasing=TRUE) #increasing order as default
+mfreq[head(mord,20)]
+
+```
+
+Analysis (Word Cloud):
+
+```{r echo=FALSE, warning=FALSE}
+wordCloud <- function (doc_target, president_name){
+  print(president_name)
+  dtm = DocumentTermMatrix(doc_target)
+  mfreq = colSums(as.matrix(dtm))
+  wordcloud(names(mfreq),mfreq, max.words = 100)
+  return(mfreq) 
+}
+
+i=1
+presidents <- c()
+matrices <- list()
+while(i < length(docs))   
+{
+  #print(c(i,"--",docs[[i]]$meta$author))
+  auth = docs[[i]]$meta$author
+  i = i+1
+  j = i
+  while (docs[[j]]$meta$author == auth){
+    #print(c(j,"--",docs[[j]]$meta$author))
+    j = j+1
+    if (j > length(docs)){
+      break
+    }
+  }
+  docs_target <- docs[i:j-1]
+  presidents <- c(presidents,auth)
+  matrices <- unlist(list(matrices,list(wordCloud(docs_target,auth))), recursive = FALSE)
+  i = j
+}
+
+length(presidents)
+length(matrices)
+matrices
+matrices[5]
+```
