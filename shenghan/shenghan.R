@@ -70,9 +70,9 @@ circle <- data.frame(x = 0.3*cos(theta), y = 0.3*sin(theta))
 
 loadings <- data.frame(pca_df$rotation,.names = df_party[,4])
 p <- ggplot(circle,aes(x,y)) + geom_path() +
-  geom_text(data=loadings, mapping=aes(x = PC1, y = PC2, label = .names, colour = .names)) +
+  geom_text(data=loadings, mapping=aes(x = PC1-0.1, y = PC2, label = .names, colour = .names)) +
   coord_fixed(ratio=1) +
-  labs(x = "PC1", y = "PC2")
+  labs(x = "PC2", y = "PC1")
 
 p
 
