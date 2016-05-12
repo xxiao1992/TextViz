@@ -11,8 +11,10 @@ require('tm')
 require('Rgraphviz')
 require('fpc')
 
-setwd("/home/rohitb/Dropbox/Spring16/ExploratoryDataAnalysis/Assignments/Project4")
+setwd("/Users/vishaljuneja/Desktop/EDAV/Project5/textViz/")
 
+mypwd = "/Users/vishaljuneja/Desktop/EDAV/Project5/textViz/data"
+docs = Corpus(DirSource(mypwd))
 
 #reading the file and creating a temporary corpus
 text <- readLines("State of the Union Addresses 1970-2016.txt")
