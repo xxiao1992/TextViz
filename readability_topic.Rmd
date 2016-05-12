@@ -1,16 +1,23 @@
-setwd("C:/Users/oweni/OneDrive/Documents/GitHub/textViz")
+---
+title: "Readability and Topic Model"
+author: "Xuyan"
+date: "May 12, 2016"
+output: html_document
+d3: true
+---
+{% include JB/setup %}
 
+## Readability of the Speeches
+
+We first use the flesch-kincaid grade level to measure the readability of all the speeches.
+
+```{r cars, echo=FALSE, warning=F, message=F}
 require('tm')
 require('ggplot2')
 
-mypwd = "C:/Users/oweni/OneDrive/Documents/GitHub/textViz/data"
+mypwd = paste(getwd(),"/data",sep = "")
 
 corpora = Corpus(DirSource(mypwd))
-
-class(corpora)
-class(corpora[[1]])
-inspect(corpora[1])
-
 # split the documents into individual lists
 corpora = Corpus(VectorSource(strsplit(paste(corpora[[1]]$content,collapse='\n'),"***",fixed=TRUE)[[1]]))
 
@@ -36,16 +43,19 @@ for(i in 2:length(corpora)){
   write(corpora[[i]]$content,"curText.txt")
   t = tokenize("curText.txt",lang = "en")
   fk_temp = flesch.kincaid(t)
-  fk_score_array = c(fk_score, fk_temp@Flesch.Kincaid$grade)
+  fk_score_array = c(fk_score_array, fk_temp@Flesch.Kincaid$grade)
 }
 
-index$readability = fk_ascore_array
+index$readability = fk_score_array
 index$year = as.numeric(substr(index$date,nchar(index$date)-4,nchar(index$date)))
 
 ggplot(index,aes(x = year, y = readability, group=1)) + geom_line() + 
   ggtitle("Readability by Year")
+```
 
+The plot shows a trend of decreasing flesch-kincaid grades, which means the speech is becoming easier to understand because the required equivalent grade is decreasing. The next plot shows the readability ranking of all the predidents by the average grades for each president and we can see a preference for easy-to-read texts in the Bush family.
 
+```{r, echo=FALSE, warning=F, message=F}
 # readability for each president
 pres = unique(index$predsident)
 avg_score = NULL
@@ -58,12 +68,17 @@ for(pre in pres){
 avg_score = as.data.frame(avg_score, stringsAsFactors = F)
 names(avg_score) = c("president","readability")
 avg_score$readability = as.numeric(avg_score$readability)
-ggplot(avg_score,aes(x = president, y = readability, group=1))+geom_line()
 
 ggplot(avg_score,aes(x = reorder(president,readability), y = readability))+
   geom_bar(stat = "identity") + coord_flip() + ggtitle("Average Readablity by Presidents") +
   xlab("President")
+```
 
+## Topic Model Visualization
+
+After deleting the stop words and steeming the words, we can take a look at the several most frequently used words in the speeches.
+
+```{r, echo=FALSE, warning=F, message=F}
 ###############
 # exploratory #
 ###############
@@ -100,8 +115,6 @@ docs = tm_map(docs, removeWords, myStopwords)
 
 dtm = DocumentTermMatrix(docs, control = list(minWordLength = 3))
 
-inspect(dtm[1:5,1:20])
-
 mfreq = colSums(as.matrix(dtm))
 
 p1 = ggplot(subset(data.frame(word=names(mfreq),freq=mfreq),freq>2000),aes(word,freq))+ 
@@ -109,75 +122,10 @@ p1 = ggplot(subset(data.frame(word=names(mfreq),freq=mfreq),freq>2000),aes(word,
   theme(axis.text.x=element_text(size=12,color='red',fac='bold.italic',angle=45,hjust=0.5))
 p1
 
+```
 
-#############################
-# topic model visualization #
-#############################
-doc_2 = docs
+The we fit a tpoic model with 20 topics, and the result is visualized in the following app. You can play around and see the different words for each topic.
 
-doc.list = list()
-for(i in 1:length(doc_2)){
-  tmp_list = strsplit(docs[[i]]$content, "[[:space:]]+")[[1]]
-  tmp_list = tmp_list[-(nchar(tmp_list)<1)]
-  doc.list[[i]] = tmp_list
-}
-
-names(doc.list) = index$date
-
-# compute the table of terms:
-term.table = table(unlist(doc.list))
-term.table = sort(term.table, decreasing = TRUE)
-
-# remove terms that are stop words or occur fewer than 5 times:
-del = names(term.table) %in% stop_words | term.table < 5
-term.table = term.table[!del]
-vocab = names(term.table)
-
-# now put the documents into the format required by the lda package:
-get.terms = function(x) {
-  index = match(x, vocab)
-  index = index[!is.na(index)]
-  rbind(as.integer(index - 1), as.integer(rep(1, length(index))))
-}
-documents = lapply(doc.list, get.terms)
-
-D = length(documents)  # number of documents (2,000)
-W = length(vocab)  # number of terms in the vocab (14,568)
-doc.length = sapply(documents, function(x) sum(x[2, ]))  # number of tokens per document [312, 288, 170, 436, 291, ...]
-N = sum(doc.length)  # total number of tokens in the data (546,827)
-term.frequency = as.integer(term.table)  # frequencies of terms in the corpus [8939, 5544, 2411, 2410, 2143, ...]
-
-# MCMC and model tuning parameters:
-K = 20
-G = 5000
-alpha = 0.02
-eta = 0.02
-
-# Fit the model:
-library(lda)
-set.seed(357)
-t1 = Sys.time()
-fit = lda.collapsed.gibbs.sampler(documents = documents, K = K, vocab = vocab, 
-                                   num.iterations = G, alpha = alpha, 
-                                   eta = eta, initial = NULL, burnin = 0,
-                                   compute.log.likelihood = TRUE)
-t2 = Sys.time()
-t2 - t1  # about 24 minutes on laptop
-
-theta = t(apply(fit$document_sums + alpha, 2, function(x) x/sum(x)))
-phi = t(apply(t(fit$topics) + eta, 2, function(x) x/sum(x)))
-
-
-speech = list(phi = phi,
-               theta = theta,
-               doc.length = doc.length,
-               vocab = vocab,
-               term.frequency = term.frequency)
-
-json = createJSON(phi = speech$phi, 
-                   theta = speech$theta, 
-                   doc.length = speech$doc.length, 
-                   vocab = speech$vocab, 
-                   term.frequency = speech$term.frequency)
-
-serVis(json, out.dir = 'vis', open.browser = FALSE)
+<iframe src='http://xxiao1992.github.io/topicWebsite/vis/#zoom=70' frameborder="no"
+width=1500 height=1200 
+></iframe>
