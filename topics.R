@@ -110,19 +110,21 @@ plot(scores)
 out = data.frame(cbind(names(scores), scores))
 out$scores = as.numeric(as.character(out$scores))
 o = out[36:46,]
-ggplot(o) + geom_bar(aes(x=reorder(V1, -scores), y=scores, fill="blue", alpha=0.5), stat="identity") +theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplot(o) + 
+  geom_bar(aes(x=reorder(V1, -scores), y=scores, fill="blue", alpha=0.5), stat="identity") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 
 ## read JT's speeches
 
-hitd = "/Users/vishaljuneja/Desktop/EDAV/Project5/textViz/jt"
+hitd = "/Users/vishaljuneja/Desktop/EDAV/Project5/textViz/trump"
 hdocs = Corpus(DirSource(hitd))
 hdocs = Corpus(VectorSource(strsplit(paste(hdocs[[1]]$content,collapse='\n'),"***",fixed=TRUE)[[1]]))
 
 hdocs = clean_docs(hdocs)
 
 combined = c(docs, hdocs)
-sp = c(df[,5], "Justin Trudeau")
+sp = c(df[,5], "TRUMP")
 names(combined) = sp
 
 
@@ -144,8 +146,10 @@ plot(scores)
 
 out = data.frame(cbind(names(scores), scores))
 out$scores = as.numeric(as.character(out$scores))
-out[36:46,]
-ggplot(o) + geom_bar(aes(x=reorder(V1, -scores), y=scores, fill="blue", alpha=0.5), stat="identity") +theme(axis.text.x = element_text(angle = 90, hjust = 1))
+o = out[36:46,]
+ggplot(o) + 
+  geom_bar(aes(x=reorder(V1, -scores), y=scores, alpha=0.5), stat="identity") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 
 
