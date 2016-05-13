@@ -127,5 +127,5 @@ text(mds, rownames(simMatrix))
 From the plot of the MDS, we can see that most speeches from presidents are similar. It makes sense since they use many common words and topics.
 Notice that Warren Harding and Chester A. Arthur's speeches are most dissimliar than others' speeches (they are far from the dense cluster on the graph).
 Although the graph is dense on that cluster and hard to tell who are in that cluster, we can infer the names of presidents in that cluster by excluding the presidents outside the cluster.
-For example, Bush and Obama should be in that cluster and their speeches are more similar compared with presidents such as James Monroe or Grover Cleveland.
+For example, Bush and Obama should be in that cluster and Bush's speech is more similar with Obama than presidents such as James Monroe or Grover Cleveland.
 '''
