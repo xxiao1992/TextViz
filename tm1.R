@@ -59,7 +59,7 @@ for (i in 1:length(full)){
 }
 
 bagwords = sort(unique(unlist(steml)))
-bagwords = bagwords[nchar(bagwords)!=0] # The stemmer reduced some words down to "", so I removed them. 
+bagwords = bagwords[nchar(bagwords)!=0]
 
 wordv = matrix(seq(1,(length(bagwords)*length(steml)),by=1),
                nrow=length(bagwords), ncol=length(steml),
@@ -122,3 +122,10 @@ plot(mds, type = "n", xlab = "", ylab = "", main="MDS on Documents")
 par(cex=0.5)
 text(mds, rownames(simMatrix))
 
+# write-up
+'''
+From the plot of the MDS, we can see that most speeches from presidents are similar. It makes sense since they use many common words and topics.
+Notice that Warren Harding and Chester A. Arthur's speeches are most dissimliar than others' speeches (they are far from the dense cluster on the graph).
+Although the graph is dense on that cluster and hard to tell who are in that cluster, we can infer the names of presidents in that cluster by excluding the presidents outside the cluster.
+For example, Bush and Obama should be in that cluster and their speeches are more similar compared with presidents such as James Monroe or Grover Cleveland.
+'''
